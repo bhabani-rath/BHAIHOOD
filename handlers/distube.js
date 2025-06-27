@@ -163,47 +163,39 @@ module.exports = async (client) => {
     }
   });
 
-  // When song is added to queue - UPDATED TO MATCH YOUR IMAGE
   client.distube.on("addSong", async (queue, song) => {
+    //   console.log(`Added to queue: ${song.name}`);
+
     if (queue.textChannel) {
       try {
-        // Get queue position
-        const queuePosition = queue.songs.length - 1; // Position in queue (0-indexed)
-
-        // Truncate song name if too long
-        let songName = song.name;
-        if (songName.length > 50) {
-          songName = songName.substring(0, 47) + "...";
-        }
-
         const embed = new EmbedBuilder()
-          .setColor(0x2b2d31) // Dark embed color like in image
+          .setColor(0xdc92ff)
           .setAuthor({
-            name: "🔴 Enqueued Track",
+            name: "Song added successfully",
+            iconURL: musicIcons.correctIcon,
             url: "https://discord.gg/xQF9f9yUEM",
           })
           .setDescription(
-            `✅ **Added** [${songName}](${song.url}) to the queue.\n\n` +
-              `**Duration:** ${song.formattedDuration} • **Requester:** ${song.user} • **Position:** ${queuePosition}`
+            `**${song.name}**\n- Duration: **${song.formattedDuration}**\n- Added by: ${song.user}`
           )
           .setThumbnail(song.thumbnail)
+          .setFooter({ text: "Distube Player", iconURL: musicIcons.footerIcon })
           .setTimestamp();
 
         const message = await queue.textChannel.send({ embeds: [embed] });
         addMessageForCleanup(queue.voiceChannel.guild.id, message);
 
-        // Auto-delete after 10 seconds (optional)
         setTimeout(async () => {
           try {
             if (message && !message.deleted) {
               await message.delete();
             }
           } catch (error) {
-            // Ignore error if message already deleted
+            // err
           }
-        }, 10000); // 10 seconds
+        }, 5000);
       } catch (error) {
-        console.error("Error sending add song message:", error);
+        //    console.error('Error sending add song message:', error);
       }
     }
   });
