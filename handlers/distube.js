@@ -59,9 +59,7 @@ module.exports = async (client) => {
   client.distube = new DisTube(client, {
     ...distubeConfig.distubeOptions,
     plugins: [ytDlpPlugin],
-    youtubeCookie: cookiesExist
-      ? fs.readFileSync(cookiesPath, "utf-8")
-      : undefined,
+    // Remove youtubeCookie - it's not a valid option
     ytdlOptions: {
       quality: "highestaudio",
       highWaterMark: 1 << 25,
@@ -71,7 +69,6 @@ module.exports = async (client) => {
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
           "Accept-Language": "en-US,en;q=0.9",
           "Accept-Encoding": "gzip, deflate, br",
-          Cookie: cookiesExist ? fs.readFileSync(cookiesPath, "utf-8") : "",
         },
       },
     },
@@ -346,7 +343,6 @@ module.exports = async (client) => {
       }
     }
   });
-
   // Event: Disconnected
   client.distube.on("disconnect", async (queue) => {
     if (queue.voiceChannel) {
@@ -416,6 +412,8 @@ module.exports = async (client) => {
 
   // Enhanced error handler with specific YouTube error handling
   client.distube.on("error", async (channel, error) => {
+    console.error("DisTube error:", error);
+
     if (channel && channel.guild) {
       await cleanupMessages(channel.guild.id);
     }
@@ -457,6 +455,13 @@ module.exports = async (client) => {
           "\n\n**Try:**\n" +
           "• Different video/song\n" +
           "• Check if video is public";
+      } else if (error.message.includes("age-restricted")) {
+        errorTitle = "Age Restricted Content";
+        errorMessage = "This content is age-restricted";
+        solutions =
+          "\n\n**Solutions:**\n" +
+          "• Bot owner needs to add YouTube cookies\n" +
+          "• Try a different version of the song";
       }
 
       const embed = new EmbedBuilder()
@@ -484,6 +489,53 @@ module.exports = async (client) => {
     }
   });
 
+  // Event: Search result (for better search handling)
+  client.distube.on("searchResult", (message, results) => {
+    const searchEmbed = new EmbedBuilder()
+      .setColor(0x2b2d31)
+      .setTitle("🔍 Search Results")
+      .setDescription(
+        results
+          .map(
+            (song, index) =>
+              `**${index + 1}.** [${song.name}](${song.url}) - \`${
+                song.formattedDuration
+              }\``
+          )
+          .join("\n")
+      )
+      .setFooter({ text: "Enter a number to choose or cancel to cancel" });
+
+    message.channel.send({ embeds: [searchEmbed] });
+  });
+
+  // Event: Search cancel
+  client.distube.on("searchCancel", (message) => {
+    const cancelEmbed = new EmbedBuilder()
+      .setColor(0xffe066)
+      .setDescription("🚫 Search cancelled")
+      .setFooter({ text: "Distube Player", iconURL: musicIcons.footerIcon });
+
+    message.channel.send({ embeds: [cancelEmbed] }).then((msg) => {
+      setTimeout(() => msg.delete().catch(() => {}), 3000);
+    });
+  });
+
+  // Event: Search invalid answer
+  client.distube.on("searchInvalidAnswer", (message) => {
+    const invalidEmbed = new EmbedBuilder()
+      .setColor(0xff0000)
+      .setDescription("❌ Invalid number! Search cancelled.")
+      .setFooter({ text: "Distube Player", iconURL: musicIcons.footerIcon });
+
+    message.channel.send({ embeds: [invalidEmbed] }).then((msg) => {
+      setTimeout(() => msg.delete().catch(() => {}), 3000);
+    });
+  });
+
+  // Event: Search DM
+  client.distube.on("searchDone", () => {});
+
   // Add these utility functions to client for use in commands
   client.cleanupMusicMessages = cleanupMessages;
   client.addMusicMessage = addMessageForCleanup;
@@ -495,9 +547,13 @@ module.exports = async (client) => {
     });
   }
 
-  console.log(
-    "✅ DisTube music player initialized with enhanced YouTube support!"
-  );
+  // Log successful initialization
+  console.log("✅ DisTube music player initialized successfully!");
+  if (cookiesExist) {
+    console.log("✅ YouTube cookies loaded");
+  } else {
+    console.log("⚠️  No YouTube cookies found - some features may be limited");
+  }
 };
 
 // Music card generator function
