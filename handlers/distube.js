@@ -12,15 +12,14 @@ module.exports = async (client) => {
   client.distube = new DisTube(client, {
     ...distubeConfig.distubeOptions,
     plugins: [
-      new SpotifyPlugin({
-        parallel: true,
-        emitEventsAfterFetching: true,
-        api: {
-          clientId: process.env.SPOTIFY_CLIENT_ID,
-          clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
-        },
-      }),
-    ],
+        new SpotifyPlugin({
+          api: {
+            clientId: process.env.SPOTIFY_CLIENT_ID,
+            clientSecret: process.env.SPOTIFY_CLIENT_SECRET
+          }
+        })
+      ]
+      
   });
 
   client.musicMessages = new Map();
