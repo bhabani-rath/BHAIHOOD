@@ -13,6 +13,7 @@
   "dependencies": {
     "@discordjs/builders": "^1.8.2",
     "@discordjs/voice": "^0.17.0",
+    "@distube/spotify": "^2.0.2",
     "@distube/yt-dlp": "^2.0.1",
     "@distube/ytdl": "^2.0.6",
     "@napi-rs/canvas": "^0.1.69",
